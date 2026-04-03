@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OWS Wallet Tracker — Base Chain AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#080c14;--surface:#0d1420;--surface2:#111b2e;--border:#1e2d47;--blue:#1a6cff;--cyan:#00e5ff;--green:#00ff9d;--red:#ff3b5c;--yellow:#ffd84d;--text:#e2eeff;--muted:#4a6080;--font-mono:'Space Mono',monospace;--font-display:'Syne',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(26,108,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(26,108,255,0.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:40px 24px}
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:48px;flex-wrap:wrap;gap:16px}
+.logo{font-family:var(--font-display);font-size:28px;font-weight:800}
+.logo span{color:var(--cyan)}
+.logo small{display:block;font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-weight:400}
+.agent-badge{display:flex;align-items:center;gap:8px;background:rgba(0,255,157,0.08);border:1px solid rgba(0,255,157,0.2);border-radius:6px;padding:8px 14px;font-size:11px;color:var(--green);letter-spacing:1px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.search-section{margin-bottom:40px}
+.search-label{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.search-row{display:flex;gap:12px;flex-wrap:wrap}
+.search-input{flex:1;min-width:260px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;color:var(--text);font-family:var(--font-mono);font-size:13px;outline:none;transition:border-color .2s}
+.search-input:focus{border-color:var(--blue)}
+.search-input::placeholder{color:var(--muted)}
+.btn{padding:14px 24px;border-radius:8px;border:none;font-family:var(--font-mono);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#3a7dff;transform:translateY(-1px)}
+.btn-demo{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-demo:hover{border-color:var(--cyan);color:var(--cyan)}
+.ows-strip{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:8px;padding:14px 18px;margin-bottom:32px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px}
+.ows-strip .ows-icon{color:var(--cyan);font-size:16px}
+.ows-strip strong{color:var(--cyan)}
+#loading{display:none;text-align:center;padding:80px 0}
+.spinner{width:48px;height:48px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:12px;color:var(--muted);letter-spacing:2px}
+#results{display:none}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;overflow:hidden;animation:fadeUp .4s ease both}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.stat-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.stat-value{font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--text);word-break:break-all}
+.analysis-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px;margin-bottom:24px;animation:fadeUp .4s .1s ease both}
+.section-title{font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.behavior-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.behavior-tag{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--cyan)}
+.risk-badge{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px}
+.risk-low{background:rgba(0,255,157,0.1);color:var(--green);border:1px solid rgba(0,255,157,0.3)}
+.risk-medium{background:rgba(255,216,77,0.1);color:var(--yellow);border:1px solid rgba(255,216,77,0.3)}
+.risk-high{background:rgba(255,59,92,0.1);color:var(--red);border:1px solid rgba(255,59,92,0.3)}
+.risk-meter{margin-bottom:20px}
+.risk-meter-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px}
+.risk-bar-bg{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.risk-bar-fill{height:100%;border-radius:3px;transition:width 1s ease;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red))}
+.summary-text{font-size:14px;line-height:1.7;color:#8aa0c0;margin-bottom:20px}
+.patterns-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.patterns-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text);padding:10px 14px;background:var(--surface2);border-radius:6px;border-left:2px solid var(--blue)}
+.patterns-list li::before{content:'→';color:var(--blue);flex-shrink:0}
+.recommendation{margin-top:20px;padding:14px 18px;background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.15);border-radius:8px;font-size:13px;color:var(--cyan)}
+.tx-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:24px;animation:fadeUp .4s .2s ease both}
+.tx-table{width:100%;border-collapse:collapse;font-size:12px}
+.tx-table th{text-align:left;color:var(--muted);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:0 0 12px 0;border-bottom:1px solid var(--border)}
+.tx-table td{padding:12px 0;border-bottom:1px solid rgba(30,45,71,0.5);vertical-align:middle}
+.tx-table tr:last-child td{border-bottom:none}
+.tx-hash{color:var(--blue);text-decoration:none;font-size:11px}
+.tx-hash:hover{color:var(--cyan)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.badge-transfer{background:rgba(26,108,255,0.15);color:#6699ff}
+.badge-contract{background:rgba(0,229,255,0.1);color:var(--cyan)}
+.badge-success{background:rgba(0,255,157,0.1);color:var(--green)}
+.badge-failed{background:rgba(255,59,92,0.1);color:var(--red)}
+.addr{font-size:11px;color:var(--muted);font-family:var(--font-mono)}
+.ows-proof{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:24px;animation:fadeUp .4s .3s ease both}
+.ows-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:16px}
+.ows-field{background:var(--surface2);border-radius:8px;padding:14px}
+.ows-field-label{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.ows-field-value{font-size:13px;color:var(--text);word-break:break-all}
+.ows-field-value.green{color:var(--green)}
+#error{display:none;background:rgba(255,59,92,0.08);border:1px solid rgba(255,59,92,0.2);border-radius:10px;padding:24px;color:var(--red);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div class="logo">OWS<span>.</span>Tracker<small>Base Chain AI Wallet Analyzer</small></div>
+<div class="agent-badge" id="agentBadge"><div class="dot"></div>OWS AGENT: INITIALIZING...</div>
+</header>
+<div class="ows-strip"><span class="ows-icon">🔐</span><span><strong>OpenWallet Standard</strong> — This agent analyzes blockchain data without ever accessing your private key. Powered by <strong>OWS</strong> secure agent protocol on Base chain.</span></div>
+<div class="search-section">
+<div class="search-label">Enter Base Chain Wallet Address</div>
+<div class="search-row">
+<input class="search-input" id="addressInput" type="text" placeholder="0x... Base wallet address" autocomplete="off" spellcheck="false"/>
+<button class="btn btn-primary" onclick="analyze()">ANALYZE</button>
+<button class="btn btn-demo" onclick="demo()">DEMO</button>
+</div>
+</div>
+<div id="loading"><div class="spinner"></div><div class="loading-text" id="loadingText">FETCHING BLOCKCHAIN DATA...</div></div>
+<div id="error"></div>
+<div id="results">
+<div class="stats-grid">
+<div class="stat-card"><div class="stat-label">ETH Balance</div><div class="stat-value" id="statBalance">—</div></div>
+<div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="statTxCount">—</div></div>
+<div class="stat-card"><div class="stat-label">Risk Score</div><div class="stat-value" id="statRisk">—</div></div>
+<div class="stat-card"><div class="stat-label">Wallet Type</div><div class="stat-value" id="statType" style="font-size:16px">—</div></div>
+</div>
+<div class="analysis-card">
+<div class="section-title">AI ANALYSIS</div>
+<div class="behavior-row"><div class="behavior-tag" id="behaviorTag">—</div><div class="risk-badge" id="riskBadge">—</div></div>
+<div class="risk-meter"><div class="risk-meter-label"><span>RISK SCORE</span><span id="riskNum">0/10</span></div><div class="risk-bar-bg"><div class="risk-bar-fill" id="riskBar" style="width:0%"></div></div></div>
+<div class="summary-text" id="summaryText">—</div>
+<div class="section-title">DETECTED PATTERNS</div>
+<ul class="patterns-list" id="patternsList"></ul>
+<div class="recommendation" id="recommendation"></div>
+</div>
+<div class="ows-proof">
+<div class="section-title">OWS AGENT VERIFICATION</div>
+<div class="ows-fields">
+<div class="ows-field"><div class="ows-field-label">Agent ID</div><div class="ows-field-value" id="owsAgentId">—</div></div>
+<div class="ows-field"><div class="ows-field-label">Private Key Access</div><div class="ows-field-value green">NONE ✓</div></div>
+<div class="ows-field"><div class="ows-field-label">Chain</div><div class="ows-field-value green">Base (eip155:8453)</div></div>
+<div class="ows-field"><div class="ows-field-label">Permissions</div><div class="ows-field-value">read, analyze</div></div>
+</div>
+</div>
+<div class="tx-card">
+<div class="section-title">RECENT TRANSACTIONS</div>
+<div style="overflow-x:auto">
+<table class="tx-table">
+<thead><tr><th>Hash</th><th>Date</th><th>Type</th><th>Value (ETH)</th><th>Status</th></tr></thead>
+<tbody id="txBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<script>
+fetch('/api/agent').then(r=>r.json()).then(()=>{document.getElementById('agentBadge').innerHTML='<div class="dot"></div>OWS AGENT: ACTIVE'}).catch(()=>{});
+async function demo(){document.getElementById('addressInput').value='0x4200000000000000000000000000000000000006';await analyze();}
+async function analyze(){
+const address=document.getElementById('addressInput').value.trim();
+if(!address){alert('Please enter a wallet address');return;}
+document.getElementById('results').style.display='none';
+document.getElementById('error').style.display='none';
+document.getElementById('loading').style.display='block';
+const steps=['FETCHING BLOCKCHAIN DATA...','PARSING TRANSACTIONS...','RUNNING AI ANALYSIS...','BUILDING REPORT...'];
+let step=0;
+const si=setInterval(()=>{step=(step+1)%steps.length;document.getElementById('loadingText').textContent=steps[step];},1200);
+try{
+const res=await fetch(`/api/analyze/${address}`);
+const data=await res.json();
+clearInterval(si);
+if(!res.ok)throw new Error(data.error||'Analysis failed');
+renderResults(data);
+}catch(err){
+clearInterval(si);
+document.getElementById('loading').style.display='none';
+const e=document.getElementById('error');
+e.style.display='block';
+e.textContent=`⚠ Error: ${err.message}`;
+}}
+function renderResults(data){
+const{analysis,transactions,balance,transactionCount,agent}=data;
+document.getElementById('statBalance').textContent=parseFloat(balance).toFixed(4)+' ETH';
+document.getElementById('statTxCount').textContent=transactionCount;
+document.getElementById('statRisk').textContent=analysis.riskScore+'/10';
+document.getElementById('statType').textContent=analysis.behaviorType;
+document.getElementById('behaviorTag').textContent=analysis.behaviorType;
+document.getElementById('summaryText').textContent=analysis.summary;
+document.getElementById('recommendation').textContent=analysis.recommendation;
+const badge=document.getElementById('riskBadge');
+badge.textContent=analysis.riskLabel;
+badge.className='risk-badge '+(analysis.riskScore<=3?'risk-low':analysis.riskScore<=6?'risk-medium':'risk-high');
+document.getElementById('riskNum').textContent=analysis.riskScore+'/10';
+setTimeout(()=>{document.getElementById('riskBar').style.width=(analysis.riskScore*10)+'%';},100);
+document.getElementById('patternsList').innerHTML=(analysis.patterns||[]).map(p=>`<li>${p}</li>`).join('');
+document.getElementById('owsAgentId').textContent=agent.id;
+document.getElementById('txBody').innerHTML=(transactions||[]).map(tx=>`
+<tr>
+<td><a class="tx-hash" href="https://basescan.org/tx/${tx.hash}" target="_blank">${tx.hash.slice(0,10)}…</a></td>
+<td class="addr">${tx.date}</td>
+<td><span class="badge badge-${tx.type.toLowerCase()}">${tx.type}</span></td>
+<td>${tx.value}</td>
+<td><span class="badge badge-${tx.status}">${tx.status}</span></td>
+</tr>`).join('');
+document.getElementById('loading').style.display='none';
+document.getElementById('results').style.display='block';}
+document.getElementById('addressInput').addEventListener('keydown',e=>{if(e.key==='Enter')analyze();});
+</script>
+</body>
+</html>

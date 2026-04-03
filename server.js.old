@@ -1,0 +1,97 @@
+require("dotenv").config();
+const express = require("express");
+const axios = require("axios");
+const cors = require("cors");
+const path = require("path");
+const { createAgentSession, checkPermission } = require("./agent");
+const { analyzeWallet } = require("./analyzer");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static("public"));
+
+const DEMO_WALLET = "0x4200000000000000000000000000000000000006";
+let agentSession = null;
+
+function getAgent() {
+  if (!agentSession) {
+    const token = process.env.OWS_AGENT_TOKEN || "demo-ows-token-hackathon-2024";
+    agentSession = createAgentSession(token);
+    console.log(`✅ OWS Agent initialized: ${agentSession.agentId}`);
+  }
+  return agentSession;
+}
+
+app.get("/api/agent", (req, res) => {
+  const agent = getAgent();
+  res.json({
+    agentId: agent.agentId,
+    config: agent.config,
+    permissions: agent.permissions,
+    privateKeyAccess: agent.privateKeyAccess,
+    status: "active",
+  });
+});
+
+app.get("/api/analyze/:address", async (req, res) => {
+  const agent = getAgent();
+  const address = req.params.address || DEMO_WALLET;
+  const permission = checkPermission(agent, "read");
+  if (!permission.allowed) {
+    return res.status(403).json({ error: "OWS agent permission denied" });
+  }
+  try {
+    const apiKey = process.env.BASESCAN_API_KEY;
+    const baseUrl = "https://api.basescan.org/api";
+    const [txRes, balRes] = await Promise.all([
+      axios.get(baseUrl, {
+        params: {
+          module: "account", action: "txlist", address,
+          startblock: 0, endblock: 99999999,
+          page: 1, offset: 20, sort: "desc", apikey: apiKey,
+        },
+      }),
+      axios.get(baseUrl, {
+        params: {
+          module: "account", action: "balance",
+          address, tag: "latest", apikey: apiKey,
+        },
+      }),
+    ]);
+    const transactions = Array.isArray(txRes.data.result) ? txRes.data.result : [];
+    const balance = (parseFloat(balRes.data.result || "0") / 1e18).toFixed(6);
+    const analysis = await analyzeWallet(address, transactions, balance);
+    res.json({
+      address, balance,
+      transactionCount: transactions.length,
+      transactions: transactions.slice(0, 10).map((tx) => ({
+        hash: tx.hash, from: tx.from, to: tx.to,
+        value: (parseFloat(tx.value) / 1e18).toFixed(6),
+        date: new Date(tx.timeStamp * 1000).toLocaleDateString(),
+        type: tx.input === "0x" ? "Transfer" : "Contract",
+        status: tx.isError === "0" ? "success" : "failed",
+      })),
+      analysis,
+      agent: { id: agent.agentId, privateKeyAccess: agent.privateKeyAccess },
+    });
+  } catch (err) {
+    console.error("Analysis error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/demo", async (req, res) => {
+  res.redirect(`/api/analyze/${DEMO_WALLET}`);
+});
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`\n🚀 OWS Wallet Tracker running at http://localhost:${PORT}`);
+  console.log(`🤖 OWS Agent: ACTIVE (private key access: NONE)`);
+  console.log(`📊 Demo wallet: ${DEMO_WALLET}\n`);
+});
